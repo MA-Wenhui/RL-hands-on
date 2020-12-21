@@ -13,9 +13,11 @@ env = gym.make('Blackjack-v0')
 
 def sample_policy(observation):
     score, dealer_score, usable_ace = observation
+    # stand if score>=20, otherwise hit
     return 0 if score >= 20 else 1
 
 
+# one round
 def generate_episode(env):
     states, actions, rewards = [], [], []
     observation = env.reset()
@@ -40,11 +42,6 @@ state_values = np.zeros((len(player_sum),
                          len(usable_ace)))
 
 fig, axes = pyplot.subplots(nrows=2, figsize=(5, 8), subplot_kw={'projection': '3d'})
-for ax in axes:
-    ax.set_zlim(-1, 1)
-    ax.set_ylabel('player sum')
-    ax.set_xlabel('dealer showing')
-    ax.set_zlabel('state-value')
 
 
 def plot_blackjack(V, ax1, ax2):
@@ -53,8 +50,8 @@ def plot_blackjack(V, ax1, ax2):
             for k, ace in enumerate(usable_ace):
                 state_values[i, j, k] = V[player, dealer, ace]
 
-    ax1.scatter(X, Y, state_values[:, :, 0])
-    ax2.scatter(X, Y, state_values[:, :, 1])
+    ax1.plot_wireframe(X, Y, state_values[:, :, 0])
+    ax2.plot_wireframe(X, Y, state_values[:, :, 1])
 
 
 value_table = defaultdict(float)
@@ -72,10 +69,16 @@ def first_visit_mc_prediction(env, n_episodes):
             if S not in states[:t]:
                 N[S] += 1
                 value_table[S] += (returns - value_table[S]) / N[S]
-        axes[0].cla()
-        axes[1].cla()
-        plot_blackjack(value_table, axes[0], axes[1])
-        plt.pause(0.001)
 
 
-first_visit_mc_prediction(env, 100000)
+
+first_visit_mc_prediction(env, 1000000000)
+
+for ax in axes:
+    ax.set_zlim(-1, 1)
+    ax.set_ylabel('player sum')
+    ax.set_xlabel('dealer showing')
+    ax.set_zlabel('state-value')
+
+plot_blackjack(value_table, axes[0], axes[1])
+plt.show()
