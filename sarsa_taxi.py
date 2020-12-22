@@ -1,8 +1,9 @@
 import gym
 import random
 import matplotlib.pyplot as plt
+import qlearning_taxi
 
-class QLearningTaxi(object):
+class SarsaTaxi(object):
     def __init__(self, en, a, g, e):
         self.alpha = a
         self.gamma = g
@@ -15,11 +16,6 @@ class QLearningTaxi(object):
             for a in range(self.env.action_space.n):
                 self.q[(s, a)] = 0.0
 
-    # Q(s,a) = Q(s,a) + α( r + γ*maxQ(s',a') - Q(s,a) )
-    def update_q_table(self, prev_state, action, reward, next_state, alpha, gamma):
-        qa = max(self.q[(next_state, a)] for a in range(self.env.action_space.n))
-        self.q[(prev_state, action)] += alpha * (reward + gamma * qa - self.q[(prev_state, action)])
-
     def epsilon_greedy_policy(self, state, epsilon):
         if random.uniform(0, 1) < epsilon:
             # do random action
@@ -31,16 +27,22 @@ class QLearningTaxi(object):
     def solve(self):
         rewards = []
         # initialize Q table
-
         for i in range(self.n_episodes):
             r = 0
-            prev_state = self.env.reset()
+            state = env.reset()
+            # pick up an action from ε-greedy
+            action = self.epsilon_greedy_policy(state, self.epsilon)
             while True:
-                action = self.epsilon_greedy_policy(prev_state, self.epsilon)
-                next_state, reward, done, _ = self.env.step(action)
-                self.update_q_table(prev_state, action, reward, next_state, self.alpha, self.gamma)
-
-                prev_state = next_state
+                # move a step
+                next_state, reward, done, _ = env.step(action)
+                # choose next action, still by ε-greedy
+                next_action = self.epsilon_greedy_policy(next_state, 0.001)
+                # update Q-table
+                # Q(s,a) = Q(s,a) + α( r + γ*Q(s',a') - Q(s,a) )
+                self.q[(state, action)] += self.alpha * (reward + self.gamma * self.q[(next_state, next_action)] -
+                                                         self.q[(state, action)])
+                action = next_action
+                state = next_state
                 r += reward
                 if done:
                     break
@@ -49,13 +51,13 @@ class QLearningTaxi(object):
         return rewards
         # print("total reward: ", r)
 
-#
-# a1 = QLearningTaxi(env, 0.4, 0.999, 0.17).solve()
-# a2 = QLearningTaxi(env, 0.8, 0.999, 0.17).solve()
-# a3 = QLearningTaxi(env, 0.4, 0.999, 0.02).solve()
-#
-# plt.plot(range(len(a1)), a1, 'b-', linewidth=0.5)
-# plt.plot(range(len(a2)), a2, 'r-', linewidth=0.5)
-# plt.plot(range(len(a3)), a3, 'y-', linewidth=0.5)
-#
-# plt.show()
+
+env = gym.make("Taxi-v2")
+
+a1 = SarsaTaxi(env, 0.4, 0.999, 0.05).solve()
+a2 = qlearning_taxi.QLearningTaxi(env, 0.4, 0.999, 0.05).solve()
+
+plt.plot(range(len(a1)), a1, 'b-', linewidth=0.5)
+plt.plot(range(len(a2)), a2, 'r-', linewidth=0.5)
+
+plt.show()
